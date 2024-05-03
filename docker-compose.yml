@@ -81,6 +81,9 @@ services:
       - 3000:3000
     restart: unless-stopped
     volumes:
-      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboard.yml:/etc/grafana/provisioning/dashboards/main.yml
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+      - ./grafana/datasources/datasource.yml:/etc/grafana/provisioning/datasources/main.yml
+
     networks: 
       - metrics-net
