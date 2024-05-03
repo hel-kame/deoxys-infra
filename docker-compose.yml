@@ -22,10 +22,9 @@ services:
   prometheus:
     container_name: prometheus
     image: prom/prometheus:latest
-    network_mode: "host"
     restart: unless-stopped
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
       - "9090:9090"
     networks: 
@@ -53,7 +52,6 @@ services:
   cadvisor:
     container_name: cadvisor
     image: gcr.io/cadvisor/cadvisor:latest
-    network_mode: "host"
     restart: unless-stopped
     ports:
       - "8080:8080"
