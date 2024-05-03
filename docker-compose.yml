@@ -1,5 +1,8 @@
 version: '3'
 
+networks:
+  metrics-net:
+
 services:
   deoxys:
     build:
@@ -12,6 +15,8 @@ services:
       - "9615:9615"
     volumes:
       - /var/lib/deoxys:/var/lib/deoxys
+    networks: 
+      - metrics-net
     command: ["--deoxys", "--rpc-port", "9944", "--network", "main", "--rpc-external", "--rpc-cors", "*", "--rpc-methods", "Safe", "--l1-endpoint", "${DEOXYS_ETHEREUM_API_URL}", "--rpc-max-connections", "100", "--base-path", "/var/lib/deoxys", "--prometheus-external", "--gateway-key", "${API_KEY}"]
   
   prometheus:
@@ -23,8 +28,8 @@ services:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
       - "9090:9090"
-    depends_on:
-      - deoxys
+    networks: 
+      - metrics-net
   
   node-exporter:
     image: quay.io/prometheus/node-exporter:latest
@@ -42,8 +47,8 @@ services:
       - "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)"
     ports:
       - "9100:9100"
-    depends_on:
-      - prometheus
+    networks: 
+      - metrics-net
   
   cadvisor:
     container_name: cadvisor
@@ -61,8 +66,8 @@ services:
     privileged: true
     devices: 
       - "/dev/kmsg"
-    depends_on:
-      - prometheus
+    networks: 
+      - metrics-net
 
   grafana:
     image: grafana/grafana
@@ -73,5 +78,5 @@ services:
     volumes:
       - ./grafana/datasources:/etc/grafana/provisioning/datasources
       - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
-    depends_on:
-      - prometheus
+    networks: 
+      - metrics-net
