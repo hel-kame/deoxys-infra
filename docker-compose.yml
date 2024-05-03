@@ -28,13 +28,11 @@ services:
     ports:
       - "9090:9090"
     links:
-      - node-exporter:node-exporter
       - cadvisor:cadvisor
     networks: 
       - metrics-net
     depends_on: 
       - cadvisor
-      - node-exporter
 
   node-exporter:
     image: quay.io/prometheus/node-exporter:latest
