@@ -1,0 +1,77 @@
+version: '3'
+
+services:
+  deoxys:
+    build:
+      context: ./deoxys/
+      dockerfile: Dockerfile
+    container_name: deoxys
+    restart: unless-stopped
+    ports:
+      - "9944:9944"
+      - "9615:9615"
+    volumes:
+      - /var/lib/deoxys:/var/lib/deoxys
+    command: ["--deoxys", "--rpc-port", "9944", "--network", "main", "--rpc-external", "--rpc-cors", "*", "--rpc-methods", "Safe", "--l1-endpoint", "${DEOXYS_ETHEREUM_API_URL}", "--rpc-max-connections", "100", "--base-path", "/var/lib/deoxys", "--prometheus-external", "--gateway-key", "${API_KEY}"]
+  
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:latest
+    network_mode: "host"
+    restart: unless-stopped
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    depends_on:
+      - deoxys
+  
+  node-exporter:
+    image: quay.io/prometheus/node-exporter:latest
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+      - /:/host:ro,rslave
+    command: 
+      - '--path.rootfs=/host'
+      - '--path.procfs=/host/proc' 
+      - '--path.sysfs=/host/sys'
+      - --collector.filesystem.ignored-mount-points
+      - "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)"
+    ports:
+      - "9100:9100"
+    depends_on:
+      - prometheus
+  
+  cadvisor:
+    container_name: cadvisor
+    image: gcr.io/cadvisor/cadvisor:latest
+    network_mode: "host"
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes: 
+      - "/:/rootfs"
+      - "/var/run:/var/run"
+      - "/sys:/sys"
+      - "/var/lib/docker/:/var/lib/docker"
+      - "/dev/disk/:/dev/disk"
+    privileged: true
+    devices: 
+      - "/dev/kmsg"
+    depends_on:
+      - prometheus
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - 3000:3000
+    restart: unless-stopped
+    volumes:
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+    depends_on:
+      - prometheus
