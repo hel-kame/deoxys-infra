@@ -1,8 +1,5 @@
 version: '3'
 
-networks:
-  metrics-net:
-
 services:
   deoxys:
     build:
@@ -15,8 +12,6 @@ services:
       - "9615:9615"
     volumes:
       - /var/lib/deoxys:/var/lib/deoxys
-    networks: 
-      - metrics-net
     command: ["--deoxys", "--rpc-port", "9944", "--network", "main", "--rpc-external", "--rpc-cors", "*", "--rpc-methods", "Safe", "--l1-endpoint", "${DEOXYS_ETHEREUM_API_URL}", "--rpc-max-connections", "100", "--base-path", "/var/lib/deoxys", "--prometheus-external", "--gateway-key", "${API_KEY}"]
   
   prometheus:
@@ -29,10 +24,10 @@ services:
       - "9090:9090"
     links:
       - cadvisor:cadvisor
-    networks: 
-      - metrics-net
+      - influxdb:influxdb
     depends_on: 
       - cadvisor
+      - influxdb
 
   node-exporter:
     image: quay.io/prometheus/node-exporter:latest
@@ -50,8 +45,6 @@ services:
       - "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)"
     ports:
       - "9100:9100"
-    networks: 
-      - metrics-net
   
   cadvisor:
     container_name: cadvisor
@@ -68,8 +61,6 @@ services:
     privileged: true
     devices: 
       - "/dev/kmsg"
-    networks: 
-      - metrics-net
 
   grafana:
     image: grafana/grafana
@@ -83,5 +74,19 @@ services:
       - ./grafana/dashboards:/var/lib/grafana/dashboards
       - ./grafana/datasources/datasource.yml:/etc/grafana/provisioning/datasources/main.yml
 
-    networks: 
-      - metrics-net
+  #telegraf:
+  #  image: telegraf:latest
+  #  volumes:
+  #  - ./telegraf/etc/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+  #  - /var/lib/deoxys:/var/lib/deoxys
+  #  depends_on:
+  #    - influxdb
+  #  links:
+  #    - influxdb
+  #  ports:
+  #  - 8125:8125
+
+  #influxdb:
+  #  image: influxdb:latest
+  #  ports:
+  #    - 8086:8086
